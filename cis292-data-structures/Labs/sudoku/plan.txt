@@ -4,11 +4,17 @@ call solve()
 solve()
     while not at last cell
         pick cell
-        try number in cell
-            check if number is in row
-            chck if number is in column
-            check if number is in subgrid
-        insert number in cell
-    move to next cell
+        if cell is empty
+            try number in cell
+                check if number is in row
+                chck if number is in column
+                check if number is in subgrid
+            if number is valid
+                insert number in cell
+                move to next cell
+            else
+                keep cell empty and try another value
+        else 
+            move to next cell
         
 
