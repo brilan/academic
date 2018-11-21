@@ -1,85 +1,113 @@
 /*
+    Lane, Brian
     CIS292 Data Structures
     Lab 5 - Recursion with Backtracking
         Sudoku Puzzle Solver
 
-    Lane, Brian
+    Input file: list as command argument or wait for prompt
 */
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
 public class SudokuPuzzle {
-
+    
     // create and initialize board and related variables
-    private static final int EMPTY_VALUE = 0;
-    private static final int MAX_VALUE = 9;
-    
-    // temp values
-    public static int[][] board1 = {
-        {9,0,0,1,0,0,0,0,5},
-        {0,0,5,0,9,0,2,0,1},
-        {8,0,0,0,4,0,0,0,0},
-        {0,0,0,0,8,0,0,0,0},
-        {0,0,0,7,0,0,0,0,0},
-        {0,0,0,0,2,6,0,0,9},
-        {2,0,0,3,0,0,0,0,6},
-        {0,0,0,2,0,0,9,0,0},
-        {0,0,1,9,0,4,5,7,0},
-};
-    
-    private static int[][] board2 = {
-        { 5, 3, 0, 0, 7, 0, 0, 0, 0 },
-        { 6, 0, 0, 1, 9, 5, 0, 0, 0 },
-        { 0, 9, 8, 0, 0, 0, 0, 6, 0 },
-        { 8, 0, 0, 0, 6, 0, 0, 0, 3 },
-        { 4, 0, 0, 8, 0, 3, 0, 0, 1 },
-        { 7, 0, 0, 0, 2, 0, 0, 0, 6 },
-        { 0, 6, 0, 0, 0, 0, 2, 8, 0 },
-        { 0, 0, 0, 4, 1, 9, 0, 0, 5 },
-        { 0, 0, 0, 0, 8, 0, 0, 7, 9 },
-    };
+    private final int EMPTY_VALUE = 0;
+    private final int MAX_VALUE = 9;
 
-    public static void main( String[] args) {
-        
+    private int[][] board = new int[ MAX_VALUE ][ MAX_VALUE ];
+
+    public static void main( String[] args) throws FileNotFoundException {
+
+        // Create new puzzle
+        SudokuPuzzle puzzle = new SudokuPuzzle();
+
         // fill board with hint values from file
+        puzzle.setBoard( args );
+        
+        // print original board
         System.out.println( "Board to solve:" );
-        printBoard();
+        puzzle.printBoard();
 
-        // call solve function and print if solution is found
-        if ( solve() ) {
+        // call solve function and print if solution is found or report no solution
+        if ( puzzle.solve() ) {
             System.out.println( "Board solution found:" );
-            printBoard();
+            puzzle.printBoard();
         } else {
             System.out.println("No solution found.");
         }
         
-
     } // end main()
 
-    private static boolean solve() {
+
+    private void setBoard( String[] args ) {
+
+        Scanner usrIn = new Scanner( System.in ); // for user input
+        Scanner scan = null; // for reading file
+
+        boolean validFile = false; // valid file flag
+        int counter = 0; // to track invalid file entries
+
+        // validate file and reprompt if not found
+        while( !validFile ) {
+            try {
+                String filename = null;
+                if( 0 < args.length ) {
+                    filename = args[ 0 ];
+                } else {
+                    System.out.print( "Enter name of hint file: " );
+                    filename = usrIn.nextLine();
+                }
+                scan = new Scanner( new File( filename ) );
+                validFile = true;
+            } catch( FileNotFoundException e ) {
+                System.out.printf("File not found!%n%n");
+            }
+
+            // increment counter and exit program after three invalid file entries 
+            counter++;
+            if( counter > 2 ) {
+                System.out.println( "File not found. Please try again." );
+                System.exit(0);
+            }
+        }
+
+        // read values from file into board
+        for( int i = 0; i < 9; i++ ) {
+            for( int j = 0; j < 9; j++) {
+                board[ i ][ j ] = scan.nextInt();
+            }
+        }
+        // close scanners
+        usrIn.close();
+        scan.close();
+    }
+    
+    public boolean solve() {
 
         // cycle through rows and columns to try solution values
-        for( int row = 0; row < MAX_VALUE; row++ ) { // change 3 to MAX_VALUE
-            for( int col = 0; col < MAX_VALUE; col++ ) { // change 3 to MAX_VALUE
+        for( int row = 0; row < MAX_VALUE; row++ ) { 
+            for( int col = 0; col < MAX_VALUE; col++ ) {
                 // test for empty cell 
                 if( board[ row ][ col ] == EMPTY_VALUE ) {
                     // test if cell is empty and chose a value
                     for( int i = 1; i <= MAX_VALUE; i++ ) {
-                        
-                        //System.out.println("Trying " + i + " in row " + row + " col " + col); // debug
                         // check if cell is valid
                         if( isValid( row, col, i ) ) {
                             // assign index value to cell if valid
                             board[ row ][ col ] = i;
-                            //printBoard(); //debug
-                        
+                                                  
                             // check if cell leads to solution
+                            // uses recursion with backtracking
                             if( solve() ) {
                                 return true;
                             } else {
                                 // reset cell if cell is invalid
                                 board[ row ][ col ] = EMPTY_VALUE;
                             }
-                        } 
-                        
+                        }  
                     }
                     // if all values are invalid
                     return false;
@@ -90,41 +118,37 @@ public class SudokuPuzzle {
         return true;
     } // end solve()
 
-    private static boolean isValid( int row, int col, int value ) {
+    private boolean isValid( int row, int col, int value ) {
         // returns true if cell is valid 
-         return rowValid( row, value ) && colValid( col, value ) && subgridValid( row, col, value );
+        return rowValid( row, value ) && colValid( col, value ) && subgridValid( row, col, value );
     }
 
-    private static boolean rowValid( int row, int val ) {
+    private boolean rowValid( int row, int val ) {
         // test if cell value is already present in row
         for( int i = 0; i < MAX_VALUE; i++ ) {
             // return false if value is present
             if( board[ row ][ i ] == val ) {
-                //System.out.println( "--Value " + val + " is not valid in row " + row + " ind " + i ); // debug
                 return false;
             }
         }
         // return true if cell is valid within the specified row
-        //System.out.println( "--Value " + val + " is valid in row " + row ); // debug
         return true;
     }
 
-    private static boolean colValid( int col, int val ) {
+    private boolean colValid( int col, int val ) {
         // test if cell value is already present in column
         for( int i = 0; i < MAX_VALUE; i++ ) {
             // return false if value is present
             if( board[ i ][ col ] == val ) {
-                //System.out.println( "--Value " + val + " is not valid in col " + col ); // debug
                 return false;
             }
         }
         // return true if cell is valid within the specified column
-        //System.out.println( "--Value " + val + " is valid in col " + col ); // debug
         return true;
         
     }
 
-    private static boolean subgridValid( int row, int col, int val ) {
+    private boolean subgridValid( int row, int col, int val ) {
         int subgridSize = 3;
         // define subgrid
         int subgridRowBegin = ( row / subgridSize ) * subgridSize;
@@ -137,19 +161,16 @@ public class SudokuPuzzle {
             for( int subCol = subgridColBegin; subCol < subgridColEnd; subCol++ ) {
                 // return false if value is present
                 if( board[ subRow ][ subCol ] == val ) {
-                    //System.out.println( "--Value " + val + " is not valid in subgrid[" + subgridRowBegin + "-" + subgridRowEnd + "][" +subgridColBegin +"-"+subgridColEnd+"]"  ); // debug
                     return false;
                 }
             }
         }
         // return true if valid within specified subgrid
-        //System.out.println( "--Value " + val + " is valid in subgrid[" + subgridRowBegin + "-" + subgridRowEnd + "][" +subgridColBegin +"-"+subgridColEnd+"]"  ); // debug
         return true;
     } // end subgridValid
 
 
-
-    private static void printBoard() {
+    public void printBoard() {
 
         for( int row = 0; row < MAX_VALUE; row++ ) {
             for( int col = 0; col < MAX_VALUE; col++ ) {
@@ -163,5 +184,6 @@ public class SudokuPuzzle {
 
     } // end printBoard()
 
-} 
+
+}
 
